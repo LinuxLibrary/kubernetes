@@ -26,3 +26,17 @@
 	```
 	kubectl create -f nginx-deployment-prod.yml
 	```
+
+- To view the deployments
+
+	```
+	kubectl get deployments
+	```
+
+- To view the pods
+
+	```
+	kubectl get pods
+	```
+
+	- We should notice the name of the pod with an extension to the deployment name. Which is to uniqly identify the pod
