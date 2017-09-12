@@ -11,7 +11,7 @@
 	  replicas: 1
 	  template:
 	    metadata:
-	      lables:
+	      labels:
 	        app: nginx-deployment-prod
 	    spec:
 	      containers:
