@@ -65,4 +65,4 @@
 	        - containerPort: 80
 	```
 
-- Now we can launch this deployment as well.
+- Now we can launch this deployment as well
