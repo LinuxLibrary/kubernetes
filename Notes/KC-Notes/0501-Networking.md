@@ -145,4 +145,149 @@ spec:
 
 # NodePort
 
-- 
+- While TargetPort and ClusterIP make it available to inside the cluster, the NodePort exposes the service on each Node’s IP via the defined static port.
+- No matter which Node within the cluster is accessed, the service will be reachable based on the port number defined.
+- Let us apply the nodeport definition
+
+	```
+	# kubectl apply -f nodeport.yaml
+	```
+
+- Nodeport definition can be found below
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp1-nodeport-svc
+  labels:
+    app: webapp1-nodeport
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    nodePort: 30080
+  selector:
+    app: webapp1-nodeport
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: webapp1-nodeport-deployment
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: webapp1-nodeport
+    spec:
+      containers:
+      - name: webapp1-nodeport-pod
+        image: katacoda/docker-http-server:latest
+        ports:
+        - containerPort: 80
+---
+```
+
+- To view the details of the service
+
+	```
+	# kubectl get svc
+	```
+
+- To get detailed information of the service
+
+	```
+	# kubectl describe svc/webapp1-nodeport-svc
+	```
+
+- The service can now be reached via the Node's IP address on the NodePort defined.
+
+# External IP
+
+- Another approach to making a service available outside of the cluster is via External IP addresses.
+- Update the definition to the current cluster's IP address with 
+
+	```
+	# sed -i 's/HOSTIP/172.17.0.30/g' externalip.yaml
+	```
+
+- Let us apply the definition
+
+	```
+	# kubectl apply -f externalip.yaml
+	```
+
+- The service is now bound to the IP address and Port 80 of the master node.
+
+# Load Balancer
+
+- When running in the cloud, such as EC2 or Azure, it's possible to configure and assign a Public IP address issued via the cloud provider.
+- This will be issued via a Load Balancer such as ELB.
+- This allows additional public IP addresses to be allocated to a Kubernetes cluster without interacting directly with the cloud provider.
+- As Katacoda is not a cloud provider, it's still possible to dynamically allocate IP addresses to LoadBalancer type services.
+- This is done by deploying the Cloud Provider using
+	
+	```
+	# kubectl apply -f cloudprovider.yaml
+	```
+- When running in a service provided by a Cloud Provider this is not required.
+- When a service requests a Load Balancer, the provider will allocate one from the 10.10.0.0/26 range defined in the configuration.
+
+	```
+	# kubectl get pods -n kube-system
+	```
+
+	```
+	# kubectl apply -f loadbalancer.yaml
+	```
+
+- The service is configured via a Load Balancer as defined in
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp1-loadbalancer-svc
+  labels:
+    app: webapp1-loadbalancer
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: webapp1-loadbalancer
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: webapp1-loadbalancer-deployment
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: webapp1-loadbalancer
+    spec:
+      containers:
+      - name: webapp1-loadbalancer-pod
+        image: katacoda/docker-http-server:latest
+        ports:
+        - containerPort: 80
+---
+```
+
+- While the IP address is being defined, the service will show Pending. When allocated, it will appear in the service list.
+
+	```
+	# kubectl get svc
+	# kubectl describe svc/webapp1-loadbalancer-svc
+	```
+
+- The service can now be accessed via the IP address assigned, in this case from the 10.10.0.0/26 range.
+
+	```
+	# export LoadBalancerIP=$(kubectl describe svc/webapp1-loadbalancer-svc | grep 'LoadBalancer Ingress:' | awk '{print $3}')
+	# echo LoadBalancerIP=$LoadBalancerIP
+	# curl $LoadBalancerIP
+	```
