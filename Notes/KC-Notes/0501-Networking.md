@@ -67,3 +67,80 @@ spec:
 	```
 	# kubectl get svc
 	```
+- More details on the service configuration and active endpoints (Pods) can be viewed via 
+
+	```
+	# kubectl describe svc/webapp1-clusterip-svc
+	```
+
+- After deploying, the service can be accessed via the ClusterIP allocated.
+
+	```
+	# export CLUSTER_IP=$(kubectl get services/webapp1-clusterip-svc | grep IP: | awk '{print $2}')
+	# echo CLUSTER_IP=$CLUSTER_IP
+	# curl $CLUSTER_IP:80
+	```
+
+- Multiple requests will showcase how the service load balancers across multiple Pods based on the common label selector.
+
+# Target Port
+
+- Target ports allows us to separate the port the service is available on from the port the application is listening on.
+- TargetPort is the Port which the application is configured to listen on.
+- Port is how the application will be accessed from the outside.
+- Similar to previously, the service and extra pods are deployed via 
+
+	```
+	# kubectl apply -f clusterip-target.yaml
+	```
+
+- The following commands will create the service.
+
+	```
+	# kubectl get svc
+	# kubectl describe svc/webapp1-clusterip-targetport-svc
+	```
+
+- Definition for the clusterip-target and service can be found below
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp1-clusterip-targetport-svc  labels:    app: webapp1-clusterip-targetport
+spec:
+  ports:
+  - port: 8080
+    targetPort: 80
+  selector:
+    app: webapp1-clusterip-targetport
+---
+apiVersion: extensions/v1beta1
+kind: Deploymentmetadata:
+  name: webapp1-clusterip-targetport-deployment
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: webapp1-clusterip-targetport
+    spec:
+      containers:
+      - name: webapp1-clusterip-targetport-pod
+        image: katacoda/docker-http-server:latest
+        ports:
+        - containerPort: 80
+---
+```
+
+- After the service and pods have deployed, it can be accessed via the cluster IP as before, but this time on the defined port 8080.
+
+        ```
+        # export CLUSTER_IP=$(kubectl get services/webapp1-clusterip-svc | grep IP: | awk '{print $2}')
+        # echo CLUSTER_IP=$CLUSTER_IP
+        # curl $CLUSTER_IP:8080
+        ```
+
+- The application itself is still configured to listen on port 80. Kubernetes Service manages the translation between the two.
+
+
