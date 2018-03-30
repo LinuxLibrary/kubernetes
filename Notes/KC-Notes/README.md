@@ -1,1 +1,1 @@
-# KataCode - Kubernetes
+Kubernetes
