@@ -143,4 +143,6 @@ spec:
 
 - The application itself is still configured to listen on port 80. Kubernetes Service manages the translation between the two.
 
+# NodePort
 
+- 
