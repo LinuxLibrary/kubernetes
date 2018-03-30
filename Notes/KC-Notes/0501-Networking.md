@@ -3,10 +3,10 @@
 - Kubernetes have advanced networking capabilities that allow Pods and Services to communicate inside the cluster's network and externally.
 - In this scenario, you will learn the following types of Kubernetes services.
 	- [Cluster IP](https://github.com/LinuxLibrary/kubernetes/blob/master/Notes/KC-Notes/0501-Networking.md#cluster-ip)
-	- Target Ports
-	- NodePort
-	- External IPs
-	- Load Balancer
+	- [Target Ports](https://github.com/LinuxLibrary/kubernetes/blob/master/Notes/KC-Notes/0501-Networking.md#target-ports)
+	- [NodePort](https://github.com/LinuxLibrary/kubernetes/blob/master/Notes/KC-Notes/0501-Networking.md#nodeport)
+	- [External IPs](https://github.com/LinuxLibrary/kubernetes/blob/master/Notes/KC-Notes/0501-Networking.md#external-ips)
+	- [Load Balancer](https://github.com/LinuxLibrary/kubernetes/blob/master/Notes/KC-Notes/0501-Networking.md#load-balancer)
 - Kubernetes Services are an abstract that defines a policy and approach on how to access a set of Pods.
 - The set of Pods accessed via a Service is based on a Label Selector.
 
