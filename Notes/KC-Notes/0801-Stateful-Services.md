@@ -57,3 +57,120 @@ spec:
 - Click on the below links to get the definitions
 	- [nfs-0001.yaml](https://github.com/LinuxLibrary/kubernetes/blob/master/Builds/KC-Builds/08-Stateful_Services/nfs-0001.yaml)
 	- [nfs-0002.yaml](https://github.com/LinuxLibrary/kubernetes/blob/master/Builds/KC-Builds/08-Stateful_Services/nfs-0002.yaml)
+- Once created, view all PersistentVolumes in the cluster using
+
+	```
+	# kubectl get pv
+	```
+
+# Deploy Persistent Volume Claim
+
+- Once a Persistent Volume is available, applications can claim the volume for their use.
+- The claim is designed to stop applications accidentally writing to the same volume and causing conflicts and data corruption.
+- The claim specifies the requirements for a volume.
+- This includes read/write access and storage space required.
+- An example is as follows:
+
+```
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: claim-mysql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+```
+
+- Create two claims for two different applications.
+- A MySQL Pod will use one claim, the other used by an HTTP server.
+
+	```
+	# kubectl create -f pvc-mysql.yaml
+	# kubectl create -f pvc-http.yaml
+	```
+
+- Click on the below links to get the definitions
+	- [pvc-mysql.yaml](https://github.com/LinuxLibrary/kubernetes/blob/master/Builds/KC-Builds/08-Stateful_Services/pvc-mysql.yaml)
+	- [pvc-http.yaml](https://github.com/LinuxLibrary/kubernetes/blob/master/Builds/KC-Builds/08-Stateful_Services/pvc-http.yaml)
+- Once created, view all PersistentVolumesClaims in the cluster using
+
+	```
+	# kubectl get pvc
+	```
+- The claim will output which Volume the claim is mapped to.
+
+# Use Volume
+
+- When a deployment is defined, it can assign itself to a previous claim.
+- The following snippet defines a volume mount for the directory /var/lib/mysql/data which is mapped to the storage mysql-persistent-storage.
+- The storage called mysql-persistent-storage is mapped to the claim called claim-mysql.
+
+```
+  spec:
+      volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql/data
+  volumes:
+    - name: mysql-persistent-storage
+      persistentVolumeClaim:
+        claimName: claim-mysql
+```
+
+- Launch two new Pods with Persistent Volume Claims.
+- Volumes are mapped to the correct directory when the Pods start allowing applications to read/write as if it was a local directory.
+
+	```
+	# kubectl create -f pod-mysql.yaml
+	# kubectl create -f pod-www.yaml
+	```
+
+- Click on the below links to get the definitions
+	- [pod-mysql.yaml](https://github.com/LinuxLibrary/kubernetes/blob/master/Builds/KC-Builds/08-Stateful_Services/pod-mysql.yaml)
+	- [pod-www.yaml](https://github.com/LinuxLibrary/kubernetes/blob/master/Builds/KC-Builds/08-Stateful_Services/pod-www.yaml)
+- If a Persistent Volume Claim is not assigned to a Persistent Volume, then the Pod will be in Pending mode until it becomes available.
+- In the next step, we'll read/write data to the volume.
+
+# Read/Write Data
+
+- Our Pods can now read/write.
+- MySQL will store all database changes to the NFS Server while the HTTP Server will serve static from the NFS drive.
+- When upgrading, restarting or moving containers to a different machine the data will still be accessible.
+- To test the HTTP server, write a 'Hello World' index.html homepage.
+- In this scenario, we know the HTTP directory will be based on data-0001 as the volume definition hasn't driven enough space to satisfy the MySQL size requirement.
+
+	```
+	# docker exec -it nfs-server bash -c "echo 'Hello World' > /exports/data-0001/index.html"
+	```
+
+- Based on the IP of the Pod, when accessing the Pod, it should return the expected response.
+
+	```
+	# ip=$(kubectl get pod www -o yaml |grep podIP | awk '{split($0,a,":"); print a[2]}'); echo $ip
+	# curl $ip
+	```
+
+***Update Data***
+- When the data on the NFS share changes, then the Pod will read the newly updated data.
+
+	```
+	# docker exec -it nfs-server bash -c "echo 'Hello NFS World' > /exports/data-0001/index.html"
+	# curl $ip
+	```
+
+# Recreate Pod
+
+- Because a remote NFS server stores the data, if the Pod or the Host were to go down, then the data will still be available.
+- Deleting a Pod will cause it to remove claims to any persistent volumes.
+- New Pods can pick up and re-use the NFS share.
+
+	```
+	# kubectl delete pod www
+	# kubectl create -f pod-www2.yaml
+	# ip=$(kubectl get pod www2 -o yaml |grep podIP | awk '{split($0,a,":"); print a[2]}'); curl $ip
+	```
+
+- The applications now use a remote NFS for their data storage.
+- Depending on requirements, this same approach works with other storage engines such as GlusterHQ, AWS EBS, GCE storage or OpenStack Cinder.
